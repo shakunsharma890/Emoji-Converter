@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<title>Emoji Converter</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+
+</head>
+
+<body>
+
+<div id="notification" class="notification"></div>
+<!-- DARK MODE BUTTON -->
+<button
+    id="themeButton"
+    class="theme-btn"
+    onclick="toggleTheme()"
+>
+    🌙 Dark Mode
+</button>
+
+
+<div class="container">
+
+    <!-- HEADER -->
+    <h1>😄 Emoji Converter</h1>
+
+    <p class="description">
+        Convert text shortcuts into emojis!
+    </p>
+
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+
+        <!-- CONVERTER -->
+        <div class="converter">
+
+            <label for="message">
+                Enter your message:
+            </label>
+
+            <form method="POST">
+
+                <textarea
+                    id="message"
+                    name="message"
+                    placeholder="Type your message here..."
+                >{{ message }}</textarea>
+
+
+                <!-- CHARACTER COUNT -->
+                <div class="character-count">
+                    Characters:
+                    <span id="charCount">0</span>
+                </div>
+
+
+                <!-- ACTION BUTTONS -->
+                <div class="buttons">
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="convert"
+                    >
+                        Convert ✨
+                    </button>
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="reverse"
+                    >
+                        Reverse ↩️
+                    </button>
+
+                    <button
+                        type="button"
+                        class="swap-btn"
+                        onclick="swapResult()"
+                    >
+                        Swap ⇄
+                    </button>
+
+                    <button
+                        type="button"
+                        class="clear-btn"
+                        onclick="clearMessage()"
+                    >
+                        Clear 🧹
+                    </button>
+
+                </div>
+
+            </form>
+
+
+            <!-- RESULT -->
+            <div
+                class="result"
+                id="resultBox"
+                {% if not result %}style="display: none;"{% endif %}
+            >
+
+                <h2>Result</h2>
+
+                <p id="resultText">
+                    {{ result }}
+                </p>
+
+                <button
+                    type="button"
+                    id="copyResultButton"
+                    class="copy-result-btn"
+                    onclick="copyResult()"
+                >
+                    📋 Copy Result
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- CHEAT SHEET -->
+        <div class="cheat-sheet">
+
+            <h2>
+                Emoji Cheat Sheet ✨
+            </h2>
+
+
+            <!-- POPULAR EMOJIS -->
+            <div class="popular-emojis">
+
+                <div class="emoji-item">
+                    <span>😊</span>
+                    <code>:)</code>
+                </div>
+
+                <div class="emoji-item">
+                    <span>😂</span>
+                    <code>:laugh:</code>
+                </div>
+
+                <div class="emoji-item">
+                    <span>❤️</span>
+                    <code>:heart:</code>
+                </div>
+
+                <div class="emoji-item">
+                    <span>🔥</span>
+                    <code>:fire:</code>
+                </div>
+
+                <div class="emoji-item">
+                    <span>👍</span>
+                    <code>:thumbsup:</code>
+                </div>
+
+            </div>
+
+
+            <!-- SEARCH -->
+            <div class="emoji-search">
+
+                <input
+                    type="text"
+                    id="emojiSearch"
+                    placeholder="🔍 Search emojis..."
+                    onkeyup="searchEmojis()"
+                >
+
+            </div>
+
+
+            <!-- ALL EMOJIS -->
+            <div
+                class="emoji-list"
+                id="emojiList"
+            >
+
+                {% for shortcut, emoji in emoji_map.items() %}
+
+                <div
+                    class="emoji-item searchable-emoji"
+                    data-search="{{ shortcut }} {{ emoji }}"
+                    onclick="copyShortcut('{{ shortcut }}')"
+                    title="Click to insert {{ shortcut }}"
+                >
+
+                    <span>
+                        {{ emoji }}
+                    </span>
+
+                    <code>
+                        {{ shortcut }}
+                    </code>
+
+                </div>
+
+                {% endfor %}
+
+                <div id="noResults">
+                    😕 No emojis found
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+<footer class="footer">
+
+    <p>
+        Made with ❤️ using Python + Flask
+    </p>
+
+    <p class="footer-subtitle">
+        © 2026 Shakun Sharma • Emoji Converter v1.0
+    </p>
+
+</footer>
+</div>
+
+
+<!-- JAVASCRIPT -->
+<script>
+
+
+    // ==============================
+    // CLEAR MESSAGE
+    // ==============================
+
+    function clearMessage() {
+
+        const messageBox =
+            document.getElementById("message");
+
+        const resultBox =
+            document.getElementById("resultBox");
+
+        const result =
+            document.getElementById("resultText");
+
+        const charCount =
+            document.getElementById("charCount");
+
+        messageBox.value = "";
+
+        result.textContent = "";
+
+        charCount.textContent = "0";
+
+        resultBox.style.display = "none";
+
+        messageBox.focus();
+
+    }
+
+
+    // ==============================
+    // SEARCH EMOJIS
+    // ==============================
+
+function searchEmojis() {
+
+    const searchInput =
+        document
+            .getElementById("emojiSearch")
+            .value
+            .toLowerCase();
+
+    const emojis =
+        document.querySelectorAll(
+            ".searchable-emoji"
+        );
+
+    const noResults =
+        document.getElementById("noResults");
+
+    let visibleCount = 0;
+
+
+    emojis.forEach(function (emoji) {
+
+        const searchText =
+            emoji
+                .getAttribute("data-search")
+                .toLowerCase();
+
+        if (searchText.includes(searchInput)) {
+
+            emoji.style.display = "flex";
+
+            visibleCount++;
+
+        } else {
+
+            emoji.style.display = "none";
+
+        }
+
+    });
+
+
+    if (visibleCount === 0) {
+
+        noResults.style.display = "block";
+
+    } else {
+
+        noResults.style.display = "none";
+
+    }
+
+}
+
+
+    // ==============================
+    // INSERT SHORTCUT
+    // ==============================
+
+    async function copyShortcut(shortcut) {
+
+        const messageBox =
+            document.getElementById("message");
+
+        const currentText =
+            messageBox.value;
+
+        if (
+            currentText.length > 0 &&
+            !currentText.endsWith(" ")
+        ) {
+
+            messageBox.value += " ";
+
+        }
+
+        messageBox.value += shortcut;
+
+        messageBox.focus();
+
+        updateCharacterCount();
+
+        await navigator.clipboard.writeText(shortcut);
+
+        showNotification(
+            "😀 " + shortcut + " inserted!");
+
+    }
+
+function showNotification(message) {
+
+    const notification =
+        document.getElementById("notification");
+
+    notification.textContent = message;
+
+    notification.classList.add("show");
+
+    setTimeout(function () {
+
+        notification.classList.remove("show");
+
+    }, 1500);
+}
+    // ==============================
+    // THEME BUTTON
+    // ==============================
+
+    function updateThemeButton() {
+
+        const button =
+            document.getElementById("themeButton");
+
+        if (
+            document.body.classList.contains(
+                "dark-mode"
+            )
+        ) {
+
+            button.textContent =
+                "☀️ Light Mode";
+
+        } else {
+
+            button.textContent =
+                "🌙 Dark Mode";
+
+        }
+
+    }
+
+
+    // ==============================
+    // TOGGLE THEME
+    // ==============================
+
+    function toggleTheme() {
+
+        document.body.classList.toggle(
+            "dark-mode"
+        );
+
+        const isDark =
+            document.body.classList.contains(
+                "dark-mode"
+            );
+
+        localStorage.setItem(
+            "darkMode",
+            isDark
+        );
+
+        updateThemeButton();
+
+    }
+
+
+    // ==============================
+    // LOAD SAVED THEME
+    // ==============================
+
+    if (
+        localStorage.getItem("darkMode") === "true"
+    ) {
+
+        document.body.classList.add(
+            "dark-mode"
+        );
+
+    }
+
+    updateThemeButton();
+
+
+    // ==============================
+    // CHARACTER COUNTER
+    // ==============================
+
+    const messageBox =
+        document.getElementById("message");
+
+    const charCount =
+        document.getElementById("charCount");
+
+
+    function updateCharacterCount() {
+
+        charCount.textContent =
+            messageBox.value.length;
+
+    }
+
+
+    messageBox.addEventListener(
+        "input",
+        updateCharacterCount
+    );
+
+
+    updateCharacterCount();
+
+
+    // ==============================
+    // COPY RESULT
+    // ==============================
+
+    async function copyResult() {
+
+        const resultText =
+            document
+                .getElementById("resultText")
+                .textContent;
+
+        const button =
+            document.getElementById(
+                "copyResultButton"
+            );
+
+        if (!resultText.trim()) {
+
+            return;
+
+        }
+
+        await navigator.clipboard.writeText(
+            resultText
+        );
+
+        button.textContent =
+            "✅ Copied!";
+
+        setTimeout(function () {
+
+            button.textContent =
+                "📋 Copy Result";
+
+        }, 1500);
+
+    }
+
+
+    // ==============================
+    // SWAP RESULT
+    // ==============================
+
+    function swapResult() {
+
+    const messageBox =
+        document.getElementById("message");
+
+    const resultText =
+        document.getElementById("resultText");
+
+    const resultBox =
+        document.getElementById("resultBox");
+
+    const message =
+        messageBox.value;
+
+    const result =
+        resultText.textContent;
+
+    // Don't swap if there is no result
+    if (!result.trim()) {
+        return;
+    }
+
+    // Swap message and result
+    messageBox.value = result.trim();
+    resultText.textContent = message;
+
+    // Keep result visible
+    resultBox.style.display = "block";
+
+    updateCharacterCount();
+
+    messageBox.focus();
+}
+
+
+
+    // ==============================
+    // SHOW RESULT
+    // ==============================
+
+    function showResult() {
+
+        const result =
+            document.getElementById(
+                "resultText"
+            );
+
+        const resultBox =
+            document.getElementById(
+                "resultBox"
+            );
+
+        if (result.textContent.trim()) {
+
+            resultBox.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    showResult();
+
+</script>
+
+
+</body>
+
+</html>
